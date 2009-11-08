@@ -63,6 +63,10 @@
 	return photo.ownername;
     }
 
+    function handleFavoriteClick (photo) {
+      debugPrint ("photo " + photo.id + " from " + photoOwner (photo));
+    }
+
     function Handler () {
       this.content_dict = null;
       this.have_stream_info = false;
@@ -172,6 +176,10 @@
 
     FavoritesHandler.prototype = new StreamHandler ();
 
+    FavoritesHandler.prototype.setClickHandler = function (handler) {
+      this.click_handler = handler;
+    }
+
     FavoritesHandler.prototype.fetchStreamInfo = function () {
       this.have_stream_info = true;
     }
@@ -190,10 +198,11 @@
       this.createContent ();
 
       if (rsp.photos) {
+	var click_handler = this.click_handler;
 	this.populateFromPhotos (rsp.photos,
 				 function (img, photo) {
 				   img.onclick = function () {
-				     debugPrint ("photo " + photo.id + " from " + photoOwner (photo));
+				     click_handler (photo);
 				   }
 				 });
 	this.num_photos = parseInt (rsp.photos.total);
@@ -224,6 +233,7 @@
 
       if (!handler) {
 	handler = new FavoritesHandler ();
+	handler.setClickHandler (handleFavoriteClick);
       }
       if (handler) {
 	handler.stateUpdated ();
