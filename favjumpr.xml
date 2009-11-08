@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Module>
+<ModulePrefs title="FavJumpr" height="120">
+  <Require feature="wave" />
+  <Require feature="dynamic-height" />
+</ModulePrefs>
+<Content type="html">
+<![CDATA[
+    <div><textarea id="debug">not inited</textarea></div>
+    <div id="favtrace"></div>
+    <div id="favlist"></div>
+    <script type="text/javascript">
+
+    var api_key = "21bb71e87764db524b7ab78f9f9b2cdb";
+    var debug_text = document.getElementById ('debug');
+    var favtrace = document.getElementById ('favtrace');
+    var favlist = document.getElementById ('favlist');
+
+    var handler = null;
+
+    function debugPrint (txt) {
+      debug_text.value = debug_text.value + "\n" +  txt;
+      gadgets.window.adjustHeight ();
+    }
+
+    function callFlickr (method, args) {
+      var url = "http://api.flickr.com/services/rest/?method=" + method + "&api_key=" + encodeURIComponent(api_key) + "&format=json";
+      if (args)
+        url += "&" + args;
+      var script = document.createElement ("script");
+      script.setAttribute ("src", url);
+      script.setAttribute ("type", "text/javascript");
+      debugPrint ("fetching url " + url);
+      document.body.appendChild (script);
+    }
+
+    function getSuffixForSize (size) {
+      var suffixes = {"square": "_s", "thumbnail": "_t", "small": "_m", "medium": ""};
+      return suffixes [size];
+    }
+
+    function makePhotoURL (farm, server, id, secret, size) {
+      var suffix = getSuffixForSize (size);
+      return "http://farm" + farm + ".static.flickr.com/" + server + "/" + id + "_" + secret +  suffix + ".jpg";
+    }
+
+    function getPage () {
+      return 1;
+    }
+
+    function getPerPage () {
+      return 50;
+    }
+
+    function getFavoritesUserId () {
+      return wave.getState ().get ('favUserId');
+    }
+
+    function Handler () {
+      this.content_dict = null;
+      this.have_stream_info = false;
+    }
+
+    Handler.prototype.stateUpdated = function () {
+      if (!this.have_stream_info)
+	this.fetchStreamInfo ();
+    }
+
+    Handler.prototype.createContent = function () {
+      if (this.content_dict)
+	return;
+
+      this.content_dict = new Object ();
+    }
+
+    function StreamHandler () {
+      Handler.call (this);
+      this.num_photos = 0;
+    }
+
+    StreamHandler.prototype = new Handler ();
+
+    StreamHandler.prototype.stateUpdated = function () {
+      var page = getPage ();
+      var per_page = getPerPage ();
+
+      this.fetchPage (page, per_page);
+
+      Handler.prototype.stateUpdated.call (this);
+    }
+
+    StreamHandler.prototype.createContent = function () {
+      if (this.content_dict)
+	return;
+
+      Handler.prototype.createContent.call (this);
+
+      this.content_dict.anchors = new Array ();
+      this.content_dict.images = new Array ();
+
+      var paragraph = document.createElement ("div");
+      favlist.appendChild (paragraph);
+
+      var i;
+      for (i = 0; i < getPerPage (); ++i) {
+        var anchor = document.createElement ("a");
+        anchor.target = "_flickr";
+	var img = document.createElement ("img");
+	img.onload = function () { gadgets.window.adjustHeight (); }
+        img.hspace = 3;
+        img.vspace = 3;
+        img.align = "middle";
+	img.border = 0;
+	anchor.appendChild (img);
+	paragraph.appendChild (anchor);
+
+	this.content_dict.anchors [i] = anchor;
+	this.content_dict.images [i] = img;
+      }
+
+      gadgets.window.adjustHeight ();
+    }
+
+    StreamHandler.prototype.updateStatus = function () {
+      if (!this.have_stream_info)
+	return;
+
+      this.createContent ();
+    }
+
+    StreamHandler.prototype.populateFromPhotos = function (photos) {
+      var index;
+      for (index in photos.photo) {
+        var photo = photos.photo [index];
+        var photo_url = makePhotoURL (photo.farm, photo.server, photo.id, photo.secret, "thumbnail");
+
+    	var anchor = this.content_dict.anchors [index];
+    	var img = this.content_dict.images [index];
+
+	var owner;
+	if (photo.owner)
+	  owner = photo.owner;
+	else
+	  owner = photo.ownername;
+
+        img.src = photo_url;
+	if (photo.title)
+	  img.alt = photo.title;
+        anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
+      }
+    }
+
+    function FavoritesHandler () {
+      StreamHandler.call (this);
+    }
+
+    FavoritesHandler.prototype = new StreamHandler ();
+
+    FavoritesHandler.prototype.fetchStreamInfo = function () {
+      this.have_stream_info = true;
+    }
+
+    FavoritesHandler.prototype.fetchPage = function (page, per_page) {
+      var user_id = getFavoritesUserId ();
+      if (user_id) {
+	debugPrint ("Fetching " + user_id + " page " + page);
+	callFlickr ("flickr.favorites.getPublicList", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
+      } else {
+	debugPrint ("got userid " + user_id);
+      }
+    }
+
+    FavoritesHandler.prototype.jsonFlickrApi = function (rsp) {
+      this.createContent ();
+
+      if (rsp.photos) {
+	this.populateFromPhotos (rsp.photos);
+	this.num_photos = parseInt (rsp.photos.total);
+      }
+
+      this.updateStatus ();
+    }
+
+    function jsonFlickrApi (rsp) {
+      if (rsp.stat != "ok") {
+	// FIXME: Give an error message - probably let the handler
+	// provide it
+        //document.write("Error");
+        debugPrint ("Error!");
+	return;
+      }
+      debugPrint ("OK");
+      handler.jsonFlickrApi (rsp);
+      debugPrint ("Handler done");
+    }
+
+    function stateUpdated () {
+      if (!getFavoritesUserId ()) {
+	wave.getState ().submitDelta ({'favUserId': "28311604@N00"});
+	debugPrint ("userid set");
+	return;
+      }
+
+      if (!handler) {
+	handler = new FavoritesHandler ();
+      }
+      if (handler) {
+	handler.stateUpdated ();
+      }
+    }
+
+    function init() {
+      if (wave && wave.isInWaveContainer()) {
+        wave.setStateCallback (stateUpdated);
+	debugPrint ("callback set");
+      }
+    }
+    gadgets.util.registerOnLoadHandler(init);
+    </script>
+  ]]>
+  </Content>
+</Module>
