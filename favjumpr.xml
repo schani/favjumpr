@@ -6,14 +6,13 @@
 </ModulePrefs>
 <Content type="html">
 <![CDATA[
-    <div><textarea id="debug">not inited</textarea></div>
+    <!-- <div><textarea id="debug">not inited</textarea></div> -->
     <div id="favtrace"></div>
     <div id="favlist"></div>
     <script type="text/javascript" src="http://json.org/json2.js"></script>
     <script type="text/javascript">
 
     var api_key = "21bb71e87764db524b7ab78f9f9b2cdb";
-    var debug_text = document.getElementById ('debug');
     var favtrace = document.getElementById ('favtrace');
     var favlist = document.getElementById ('favlist');
 
@@ -21,8 +20,9 @@
     var trace_len = 0;
 
     function debugPrint (txt) {
-      debug_text.value = debug_text.value + "\n" +  txt;
-      gadgets.window.adjustHeight ();
+      //var debug_text = document.getElementById ('debug');
+      //debug_text.value = debug_text.value + "\n" +  txt;
+      //gadgets.window.adjustHeight ();
     }
 
     function callFlickr (method, args) {
