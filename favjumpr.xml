@@ -64,7 +64,10 @@
     }
 
     function handleFavoriteClick (photo) {
-      debugPrint ("photo " + photo.id + " from " + photoOwner (photo));
+      var id = photo.id;
+      var owner = photoOwner (photo);
+      debugPrint ("selected photo " + id + " from " + owner);
+      wave.getState ().submitDelta ({'favUserId': owner});
     }
 
     function Handler () {
