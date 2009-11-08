@@ -88,6 +88,7 @@
       var id = photo.id;
       var owner = photoOwner (photo);
       debugPrint ("selected photo " + id + " from " + owner);
+      handler.hideAllPhotos ();
       addPhotoToTrace (owner, photo.farm, photo.server, id, photo.secret);
       wave.getState ().submitDelta ({'favUserId': owner});
     }
@@ -147,9 +148,11 @@
         img.vspace = 3;
         img.align = "middle";
 	img.border = 0;
+	img.style.display = "none";
 	if (this.with_anchors) {
           var anchor = document.createElement ("a");
           anchor.target = "_flickr";
+	  anchor.style.display = "none";
 	  anchor.appendChild (img);
 	  paragraph.appendChild (anchor);
 
@@ -182,16 +185,34 @@
 	var owner = photoOwner (photo);
 
         img.src = photo_url;
+	img.style.display = null;
 	if (photo.title)
 	  img.alt = photo.title;
 	if (this.with_anchors) {
     	  var anchor = this.content_dict.anchors [index];
           anchor.href = makePhotoPageURL (owner, photo.id);
+	  anchor.style.display = null;
 	}
 
 	if (img_modifier)
 	  img_modifier (img, photo);
       }
+    }
+
+    StreamHandler.prototype.hideAllPhotos = function () {
+      if (!this.content_dict)
+	return;
+
+      var i;
+      for (i = 0; i < getPerPage (); ++i) {
+	var img = this.content_dict.images [i];
+	img.style.display = "none";
+	img.src = null;
+	if (this.with_anchors)
+	  this.content_dict.anchors [i].style.display = "none";
+      }
+
+      gadgets.window.adjustHeight ();
     }
 
     function FavoritesHandler () {
