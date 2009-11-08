@@ -67,8 +67,8 @@
 	return photo.ownername;
     }
 
-    function addPhotoToTrace (owner, farm, server, id, secret) {
-      var photo_url = makePhotoURL (farm, server, id, secret, "medium");
+    function addPhotoToTrace (viewer, owner, farm, server, id, secret) {
+      var photo_url = makePhotoURL (farm, server, id, secret, "small");
       var photo_page_url = makePhotoPageURL (owner, id);
       var img = document.createElement ("img");
       img.onload = function () { gadgets.window.adjustHeight (); }
@@ -81,7 +81,30 @@
       anchor.target = "_flickr";
       anchor.href = photo_page_url;
       anchor.appendChild (img);
-      favtrace.appendChild (anchor);
+
+      var table = document.createElement ("table");
+      table.style.display = "inline-table";
+      var tr = document.createElement ("tr");
+      var td = document.createElement ("td");
+      td.colSpan = 2;
+      td.appendChild (anchor);
+      tr.appendChild (td);
+      table.appendChild (tr);
+      tr = document.createElement ("tr");
+      td = document.createElement ("td");
+      img = document.createElement ("img");
+      img.border = 0;
+      img.src = viewer.getThumbnailUrl ();
+      img.width = 32;
+      img.height = 32;
+      td.appendChild (img);
+      tr.appendChild (td);
+      td = document.createElement ("td");
+      td.innerText = viewer.getDisplayName ();
+      tr.appendChild (td);
+      table.appendChild (tr);
+
+      favtrace.appendChild (table);
     }
 
     function handleFavoriteClick (photo) {
@@ -89,7 +112,7 @@
       var owner = photoOwner (photo);
       debugPrint ("selected photo " + id + " from " + owner);
       handler.hideAllPhotos ();
-      addPhotoToTrace (owner, photo.farm, photo.server, id, photo.secret);
+      addPhotoToTrace (wave.getViewer (), owner, photo.farm, photo.server, id, photo.secret);
       wave.getState ().submitDelta ({'favUserId': owner});
     }
 
