@@ -113,7 +113,6 @@
       var id = photo.id;
       var owner = photoOwner (photo);
       debugPrint ("selected photo " + id + " from " + owner);
-      handler.hideAllPhotos ();
 
       var trace = JSON.parse (wave.getState ().get ('trace'));
       var entry = {'viewer': wave.getViewer ().getId (),
@@ -275,6 +274,7 @@
     function FavoritesHandler () {
       StreamHandler.call (this);
       this.with_anchors = false;
+      this.last_favorites_user_id = null;
     }
 
     FavoritesHandler.prototype = new StreamHandler ();
@@ -289,11 +289,15 @@
 
     FavoritesHandler.prototype.fetchPage = function (page, per_page) {
       var user_id = getFavoritesUserId ();
+      if (user_id == this.last_favorites_user_id)
+	return;
+
       if (user_id) {
 	debugPrint ("Fetching " + user_id + " page " + page);
+	handler.hideAllPhotos ();
 	callFlickr ("flickr.favorites.getPublicList", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
       } else {
-	debugPrint ("got userid " + user_id);
+	debugPrint ("got invalid userid " + user_id);
       }
     }
 
