@@ -9,6 +9,7 @@
     <div><textarea id="debug">not inited</textarea></div>
     <div id="favtrace"></div>
     <div id="favlist"></div>
+    <script type="text/javascript" src="http://json.org/json2.js"></script>
     <script type="text/javascript">
 
     var api_key = "21bb71e87764db524b7ab78f9f9b2cdb";
@@ -17,6 +18,7 @@
     var favlist = document.getElementById ('favlist');
 
     var handler = null;
+    var trace_len = 0;
 
     function debugPrint (txt) {
       debug_text.value = debug_text.value + "\n" +  txt;
@@ -112,8 +114,40 @@
       var owner = photoOwner (photo);
       debugPrint ("selected photo " + id + " from " + owner);
       handler.hideAllPhotos ();
-      addPhotoToTrace (wave.getViewer (), owner, photo.farm, photo.server, id, photo.secret);
-      wave.getState ().submitDelta ({'favUserId': owner});
+
+      var trace = JSON.parse (wave.getState ().get ('trace'));
+      var entry = {'viewer': wave.getViewer ().getId (),
+	'owner': owner,
+	'farm': photo.farm,
+	'server': photo.server,
+	'id': id,
+	'secret': photo.secret};
+
+      if (trace)
+	trace.push (entry);
+      else
+	trace = [ entry ];
+
+      wave.getState ().submitDelta ({'favUserId': owner,
+				     'trace': JSON.stringify (trace)});
+    }
+
+    function getViewer (id) {
+      var participants = wave.getParticipants ();
+      for (var i = 0; i < participants.length; ++i) {
+	if (id == participants [i].getId ())
+	  return participants [i];
+      }
+      return null;
+    }
+
+    function updateTrace () {
+      var trace = JSON.parse (wave.getState ().get ('trace'));
+      for (var i = trace_len; i < trace.length; ++i) {
+	addPhotoToTrace (getViewer (trace [i].viewer),
+			 trace [i].owner, trace [i].farm, trace [i].server, trace [i].id, trace [i].secret);
+      }
+      trace_len = trace.length;
     }
 
     function Handler () {
@@ -295,7 +329,7 @@
 
     function stateUpdated () {
       if (!getFavoritesUserId ()) {
-	wave.getState ().submitDelta ({'favUserId': "28311604@N00"});
+	wave.getState ().submitDelta ({'favUserId': "28311604@N00", 'trace': "[]"});
 	debugPrint ("userid set");
 	return;
       }
@@ -307,6 +341,9 @@
       if (handler) {
 	handler.stateUpdated ();
       }
+
+      if (wave.getState ().get ('trace'))
+	updateTrace ();
     }
 
     function init() {
