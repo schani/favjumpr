@@ -56,6 +56,13 @@
       return wave.getState ().get ('favUserId');
     }
 
+    function photoOwner (photo) {
+      if (photo.owner)
+	return photo.owner;
+      else
+	return photo.ownername;
+    }
+
     function Handler () {
       this.content_dict = null;
       this.have_stream_info = false;
@@ -76,6 +83,7 @@
     function StreamHandler () {
       Handler.call (this);
       this.num_photos = 0;
+      this.with_anchors = true;
     }
 
     StreamHandler.prototype = new Handler ();
@@ -95,7 +103,8 @@
 
       Handler.prototype.createContent.call (this);
 
-      this.content_dict.anchors = new Array ();
+      if (this.with_anchors)
+	this.content_dict.anchors = new Array ();
       this.content_dict.images = new Array ();
 
       var paragraph = document.createElement ("div");
@@ -103,18 +112,23 @@
 
       var i;
       for (i = 0; i < getPerPage (); ++i) {
-        var anchor = document.createElement ("a");
-        anchor.target = "_flickr";
 	var img = document.createElement ("img");
 	img.onload = function () { gadgets.window.adjustHeight (); }
         img.hspace = 3;
         img.vspace = 3;
         img.align = "middle";
 	img.border = 0;
-	anchor.appendChild (img);
-	paragraph.appendChild (anchor);
+	if (this.with_anchors) {
+          var anchor = document.createElement ("a");
+          anchor.target = "_flickr";
+	  anchor.appendChild (img);
+	  paragraph.appendChild (anchor);
 
-	this.content_dict.anchors [i] = anchor;
+	  this.content_dict.anchors [i] = anchor;
+	} else {
+	  paragraph.appendChild (img);
+	}
+
 	this.content_dict.images [i] = img;
       }
 
@@ -128,30 +142,32 @@
       this.createContent ();
     }
 
-    StreamHandler.prototype.populateFromPhotos = function (photos) {
+    StreamHandler.prototype.populateFromPhotos = function (photos, img_modifier) {
       var index;
       for (index in photos.photo) {
         var photo = photos.photo [index];
         var photo_url = makePhotoURL (photo.farm, photo.server, photo.id, photo.secret, "thumbnail");
 
-    	var anchor = this.content_dict.anchors [index];
     	var img = this.content_dict.images [index];
 
-	var owner;
-	if (photo.owner)
-	  owner = photo.owner;
-	else
-	  owner = photo.ownername;
+	var owner = photoOwner (photo);
 
         img.src = photo_url;
 	if (photo.title)
 	  img.alt = photo.title;
-        anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
+	if (this.with_anchors) {
+    	  var anchor = this.content_dict.anchors [index];
+          anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
+	}
+
+	if (img_modifier)
+	  img_modifier (img, photo);
       }
     }
 
     function FavoritesHandler () {
       StreamHandler.call (this);
+      this.with_anchors = false;
     }
 
     FavoritesHandler.prototype = new StreamHandler ();
@@ -174,7 +190,12 @@
       this.createContent ();
 
       if (rsp.photos) {
-	this.populateFromPhotos (rsp.photos);
+	this.populateFromPhotos (rsp.photos,
+				 function (img, photo) {
+				   img.onclick = function () {
+				     debugPrint ("photo " + photo.id + " from " + photoOwner (photo));
+				   }
+				 });
 	this.num_photos = parseInt (rsp.photos.total);
       }
 
