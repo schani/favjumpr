@@ -44,6 +44,10 @@
       return "http://farm" + farm + ".static.flickr.com/" + server + "/" + id + "_" + secret +  suffix + ".jpg";
     }
 
+    function makePhotoPageURL (owner, id) {
+      return "http://www.flickr.com/photos/" + owner + "/" + id + "/";
+    }
+
     function getPage () {
       return 1;
     }
@@ -63,10 +67,28 @@
 	return photo.ownername;
     }
 
+    function addPhotoToTrace (owner, farm, server, id, secret) {
+      var photo_url = makePhotoURL (farm, server, id, secret, "medium");
+      var photo_page_url = makePhotoPageURL (owner, id);
+      var img = document.createElement ("img");
+      img.onload = function () { gadgets.window.adjustHeight (); }
+      img.hspace = 3;
+      img.vspace = 3;
+      img.align = "middle";
+      img.border = 0;
+      img.src = photo_url;
+      var anchor = document.createElement ("a");
+      anchor.target = "_flickr";
+      anchor.href = photo_page_url;
+      anchor.appendChild (img);
+      favtrace.appendChild (anchor);
+    }
+
     function handleFavoriteClick (photo) {
       var id = photo.id;
       var owner = photoOwner (photo);
       debugPrint ("selected photo " + id + " from " + owner);
+      addPhotoToTrace (owner, photo.farm, photo.server, id, photo.secret);
       wave.getState ().submitDelta ({'favUserId': owner});
     }
 
@@ -164,7 +186,7 @@
 	  img.alt = photo.title;
 	if (this.with_anchors) {
     	  var anchor = this.content_dict.anchors [index];
-          anchor.href = "http://www.flickr.com/photos/" + owner + "/" + photo.id + "/";
+          anchor.href = makePhotoPageURL (owner, photo.id);
 	}
 
 	if (img_modifier)
