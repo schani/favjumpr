@@ -2,7 +2,7 @@
     name="FavJumpr"
     thumbnailUrl="http://github.com/schani/favjumpr/raw/master/logo120.png"
     description="A little Flickr game where you have to jump from one's user's favorites to another's by selecting the one you like best.">
-  <author name="Mark Probst"/>
+  <author name="Mark Probst" email="mark.probst@gmail.com"/>
   <menuHook location="toolbar" text="Add FavJumpr"
       iconUrl="http://github.com/schani/favjumpr/raw/master/logo24alpha.png">
     <insertGadget url="http://github.com/schani/favjumpr/raw/master/favjumpr.xml"/>
