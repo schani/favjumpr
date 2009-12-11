@@ -9,7 +9,7 @@
     <!-- <div><textarea id="debug">not inited</textarea></div> -->
     <div id="favtrace"></div>
     <div id="favlist"></div>
-    <script type="text/javascript" src="http://json.org/json2.js"></script>
+    <script type="text/javascript" src="http://www.complang.tuwien.ac.at/schani/json2.js"></script>
     <script type="text/javascript">
 
     var api_key = "21bb71e87764db524b7ab78f9f9b2cdb";
