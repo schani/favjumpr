@@ -289,7 +289,7 @@
 
     FavoritesHandler.prototype.fetchPage = function (page, per_page) {
       var user_id = getFavoritesUserId ();
-      if (user_id == this.last_favorites_user_id)
+      if (user_id && user_id == this.last_favorites_user_id)
 	return;
 
       if (user_id) {
@@ -297,7 +297,9 @@
 	handler.hideAllPhotos ();
 	callFlickr ("flickr.favorites.getPublicList", "user_id=" + encodeURIComponent (user_id) + "&per_page=" + per_page + "&page=" + page + "&extras=owner_name");
       } else {
-	debugPrint ("got invalid userid " + user_id);
+	debugPrint ("Fetching interesting");
+	handler.hideAllPhotos ();
+	callFlickr ("flickr.interestingness.getList", "per_page=" + per_page + "&extras=owner_name");
       }
     }
 
@@ -333,9 +335,8 @@
 
     function stateUpdated () {
       if (!getFavoritesUserId ()) {
-	wave.getState ().submitDelta ({'favUserId': "28311604@N00", 'trace': "[]"});
+	wave.getState ().submitDelta ({'trace': "[]"});
 	debugPrint ("userid set");
-	return;
       }
 
       if (!handler) {
