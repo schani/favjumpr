@@ -62,6 +62,18 @@
       return wave.getState ().get ('favUserId');
     }
 
+    function getTrace () {
+	return JSON.parse (wave.getState ().get ('trace'));
+    }
+
+    function isPhotoInTrace (id, trace) {
+	for (var i = 0; i < trace.length; ++i) {
+	    if (id == trace [i].id)
+		return true;
+	}
+	return false;
+    }
+
     function photoOwner (photo) {
       if (photo.owner)
 	return photo.owner;
@@ -114,7 +126,7 @@
       var owner = photoOwner (photo);
       debugPrint ("selected photo " + id + " from " + owner);
 
-      var trace = JSON.parse (wave.getState ().get ('trace'));
+      var trace = getTrace ();
       var entry = {'viewer': wave.getViewer ().getId (),
 	'owner': owner,
 	'farm': photo.farm,
@@ -141,7 +153,7 @@
     }
 
     function updateTrace () {
-      var trace = JSON.parse (wave.getState ().get ('trace'));
+      var trace = getTrace ();
       for (var i = trace_len; i < trace.length; ++i) {
 	addPhotoToTrace (getViewer (trace [i].viewer),
 			 trace [i].owner, trace [i].farm, trace [i].server, trace [i].id, trace [i].secret);
@@ -231,27 +243,29 @@
     }
 
     StreamHandler.prototype.populateFromPhotos = function (photos, img_modifier) {
-      var index;
-      for (index in photos.photo) {
+      var trace = getTrace ();
+      for (var index in photos.photo) {
         var photo = photos.photo [index];
-        var photo_url = makePhotoURL (photo.farm, photo.server, photo.id, photo.secret, "thumbnail");
+	if (!isPhotoInTrace (photo.id, trace)) {
+          var photo_url = makePhotoURL (photo.farm, photo.server, photo.id, photo.secret, "thumbnail");
 
-    	var img = this.content_dict.images [index];
+    	  var img = this.content_dict.images [index];
 
-	var owner = photoOwner (photo);
+	  var owner = photoOwner (photo);
 
-        img.src = photo_url;
-	img.style.display = null;
-	if (photo.title)
-	  img.alt = photo.title;
-	if (this.with_anchors) {
-    	  var anchor = this.content_dict.anchors [index];
-          anchor.href = makePhotoPageURL (owner, photo.id);
-	  anchor.style.display = null;
+          img.src = photo_url;
+	  img.style.display = null;
+	  if (photo.title)
+	    img.alt = photo.title;
+	  if (this.with_anchors) {
+    	    var anchor = this.content_dict.anchors [index];
+	    anchor.href = makePhotoPageURL (owner, photo.id);
+	    anchor.style.display = null;
+	  }
+
+	  if (img_modifier)
+	    img_modifier (img, photo);
 	}
-
-	if (img_modifier)
-	  img_modifier (img, photo);
       }
     }
 
